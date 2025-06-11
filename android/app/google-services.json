@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "743945650254",
+    "project_id": "butter-vdef",
+    "storage_bucket": "butter-vdef.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:743945650254:android:51480737f9e46d5c41831f",
+        "android_client_info": {
+          "package_name": "com.example.butter_new"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "743945650254-ttk954kai9vv16r8s6qnghrkuqcpuvog.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.butter_new",
+            "certificate_hash": "a6fd520f766c01fb3da59f2492aa7b72223f4ab0"
+          }
+        },
+        {
+          "client_id": "743945650254-m97ttd11p2k8pokt976q5crer8egmlba.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDuEj74dqtNUtKw-gqEAhATR0F7hF3AT1A"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "743945650254-m97ttd11p2k8pokt976q5crer8egmlba.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "743945650254-3ik5jsd0sht3ddeo1mtunila9aqb8bok.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.dev.butterappProfile4"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
