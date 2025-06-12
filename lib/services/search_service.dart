@@ -27,6 +27,7 @@ class SearchService {
     List<String>? restrictions,
     List<String>? ambiance,
   }) async {
+    print('[SearchService] lieux reçu = ' + (lieux?.toString() ?? 'null'));
     print('[DEBUG] ambiance envoyé au service : ${ambiance?.toString() ?? 'null'}');
     print('[DEBUG] Filtres transmis au service :');
     print('  zones:           ' + (zones?.toString() ?? 'null'));

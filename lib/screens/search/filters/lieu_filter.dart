@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 /// - [selected] : ensemble des clés de lieu actuellement sélectionnées.
 /// - [onToggle] : callback appelé lors de la sélection ou désélection d'une clé.
 class LieuFilter extends StatelessWidget {
-  /// Ensemble des clés Firestore sélectionnées (ex. 'dans_la_rue', 'dans_un_musee').
+  /// Ensemble des clés Firestore sélectionnées (ex. 'Dans la rue', 'Dans un musée').
   final Set<String> selected;
 
   /// Fonction appelée lors du basculement d'un filtre.
@@ -44,10 +44,13 @@ class LieuFilter extends StatelessWidget {
 
   Widget _buildChip(String label) {
     final key = labelToKey[label]!;
-    final isSelected = selected.contains(key);
-
+    final isSelected = selected.contains(key) || selected.contains(label);
+    print('[LieuFilter] buildChip: label=$label, key=$key, isSelected=$isSelected, selected=$selected');
     return InkWell(
-      onTap: () => onToggle(key, !isSelected),
+      onTap: () {
+        print('[LieuFilter] onTap: key=$key, newState=${!isSelected}');
+        onToggle(key, !isSelected);
+      },
       borderRadius: BorderRadius.circular(6),
       child: Container(
         height: _chipHeight,
@@ -77,6 +80,7 @@ class LieuFilter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    print('[LieuFilter] build: selected=$selected');
     final labels = labelToKey.keys.toList();
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),

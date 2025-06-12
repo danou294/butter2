@@ -90,6 +90,7 @@ class _SearchPageState extends State<SearchPage>
     final cuisines = <String>[];
     final restrictions = <String>[];
     final ambiance = <String>[];
+    final lieux = <String>[];
 
     for (var f in _selectedFilters) {
       if (Restaurant.directionGroups.containsKey(f)) {
@@ -105,11 +106,18 @@ class _SearchPageState extends State<SearchPage>
       } else if (_isAmbiance(f)) {
         final value = AmbianceFilter.keyToValue[f] ?? f;
         ambiance.add(value);
+      } else if (_isLieu(f)) {
+        if (LieuFilter.labelToKey.containsKey(f)) {
+          lieux.add(LieuFilter.labelToKey[f]!);
+        } else {
+          lieux.add(f);
+        }
       } else {
         moments.add(f);
       }
     }
 
+    print('[SearchPage] _executeSearch: lieux envoyés au service = $lieux');
     final results = await svc.SearchService().search(
       zones:           zones.isEmpty    ? null : zones,
       arrondissements: arrs.isEmpty     ? null : arrs,
@@ -118,6 +126,7 @@ class _SearchPageState extends State<SearchPage>
       cuisines:        cuisines.isEmpty ? null : cuisines,
       restrictions:    restrictions.isEmpty ? null : restrictions,
       ambiance:        ambiance.isEmpty ? null : ambiance,
+      lieux:           lieux.isEmpty    ? null : lieux,
     );
 
     setState(() {
@@ -259,6 +268,7 @@ class _SearchPageState extends State<SearchPage>
   }
 
   Widget _buildFilterView() {
+    print('[SearchPage] _buildFilterView: _selectedFilters=$_selectedFilters');
     Widget tabContent(String section) {
       switch (section) {
         case 'Localisation':
@@ -268,7 +278,7 @@ class _SearchPageState extends State<SearchPage>
           );
         case 'Moment':
           return MomentFilter(
-            selected: _selectedFilters,
+            selected: _selectedFilters.where((f) => !_isLieu(f)).toSet(),
             onToggle: _toggleFilter,
           );
         case 'Cuisine':
@@ -277,8 +287,10 @@ class _SearchPageState extends State<SearchPage>
             onToggle: _toggleFilter,
           );
         case 'Lieu':
+          final lieuxFiltres = _selectedFilters.where(_isLieu).toSet();
+          print('[SearchPage] LieuFilter: lieuxFiltres=$lieuxFiltres');
           return LieuFilter(
-            selected: _selectedFilters,
+            selected: lieuxFiltres,
             onToggle: _toggleFilter,
           );
         case 'Ambiance':
@@ -410,5 +422,9 @@ class _SearchPageState extends State<SearchPage>
       'intimiste',
     ];
     return ambianceList.contains(f.toLowerCase());
+  }
+
+  bool _isLieu(String f) {
+    return LieuFilter.labelToKey.keys.contains(f) || LieuFilter.labelToKey.values.contains(f);
   }
 }
