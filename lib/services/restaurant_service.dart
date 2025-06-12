@@ -98,37 +98,39 @@ class RestaurantService {
     final imageUrls = tag.isNotEmpty ? _generateImageUrls(tag) : <String>[];
 
     final data = <String, dynamic>{
-      'name': raw['Vrai Nom'] ?? raw['rawName'] ?? '',
+      'name': raw['name'] ?? raw['Vrai Nom'] ?? raw['rawName'] ?? '',
       'raw_name': tag,
       'address': {
-        'full': raw['Adresse'] ?? '',
-        'arrondissement': raw['Arrondissement'] ?? raw['arrondissement'] ?? 0,
+        'full': raw['address'] ?? raw['Adresse'] ?? '',
+        'arrondissement': raw['arrondissement'] ?? raw['Arrondissement'] ?? 0,
       },
-      'hours': raw['Horaires'] ?? '',
-      'commentaire': raw['more_info'] ?? '',
+      'hours': raw['hours'] ?? raw['Horaires'] ?? '',
+      'commentaire': raw['commentaire'] ?? raw['more_info'] ?? '',
       'contact': {
-        'phone': raw['Téléphone'] ?? '',
-        'website': raw['Site web'] ?? '',
-        'reservation_link': raw['Lien de réservation'] ?? '',
-        'instagram': raw['Lien de votre compte instagram'] ?? '',
+        'phone': raw['phone'] ?? raw['Téléphone'] ?? '',
+        'website': raw['website'] ?? raw['Site web'] ?? '',
+        'reservation_link': raw['reservation_link'] ?? raw['Lien de réservation'] ?? '',
+        'instagram': raw['instagram_link'] ?? raw['Lien de votre compte instagram'] ?? '',
       },
       'maps': {
-        'google_link': raw['Lien Google'] ?? '',
-        'menu_link': raw['Lien Menu'] ?? '',
+        'google_link': raw['google_link'] ?? raw['Lien Google'] ?? '',
+        'menu_link': raw['lien_menu'] ?? raw['Lien Menu'] ?? '',
       },
-      'types': raw['types'] is List ? raw['types'] : (raw['types'] is String && raw['types'].isNotEmpty) ? [raw['types']] : <String>[],
-      'moments': raw['moments'] is List ? raw['moments'] : (raw['moments'] is String && raw['moments'].isNotEmpty) ? [raw['moments']] : <String>[],
-      'lieux': raw['lieux'] is List ? raw['lieux'] : (raw['lieux'] is String && raw['lieux'].isNotEmpty) ? [raw['lieux']] : <String>[],
-      'ambiance': raw['ambiance'] is List ? raw['ambiance'] : (raw['ambiance'] is String && raw['ambiance'].isNotEmpty) ? [raw['ambiance']] : <String>[],
+      'types': raw['types'] ?? [],
+      'moments': raw['moments'] ?? [],
+      'lieux': raw['lieux'] ?? [],
+      'ambiance': raw['ambiance'] ?? [],
       'price_range': raw['price_range'] ?? '',
-      'cuisines': raw['cuisines'] is List ? raw['cuisines'] : (raw['cuisines'] is String && raw['cuisines'].isNotEmpty) ? [raw['cuisines']] : <String>[],
-      'restrictions': raw['restrictions'] is List ? raw['restrictions'] : (raw['restrictions'] is String && raw['restrictions'].isNotEmpty) ? [raw['restrictions']] : <String>[],
+      'cuisines': raw['cuisines'] ?? [],
+      'restrictions': raw['restrictions'] ?? [],
       'has_terrace': raw['has_terrace'] ?? false,
-      'terrace_locs': raw['terrace_locs'] is List ? raw['terrace_locs'] : (raw['terrace_locs'] is String && raw['terrace_locs'].isNotEmpty) ? [raw['terrace_locs']] : <String>[],
-      'stations_metro': raw['Station(s) de métro à proximité'] is List ? raw['Station(s) de métro à proximité'] : (raw['Station(s) de métro à proximité'] is String && raw['Station(s) de métro à proximité'].isNotEmpty) ? [raw['Station(s) de métro à proximité']] : <String>[],
+      'terrace_locs': raw['terrace_locs'] ?? [],
+      'stations_metro': raw['stations_metro'] ?? raw['Station(s) de métro à proximité'] ?? [],
       'more_info': raw['more_info'] ?? '',
       'logoUrl': logoUrl,
       'imageUrls': imageUrls,
+      'specialite_tag': raw['specialite_tag'] ?? '',
+      'tag': raw['tag'] ?? tag,
     };
 
     return Restaurant.fromMap(doc.id, data);
@@ -152,5 +154,16 @@ class RestaurantService {
       final id = map.remove('id') as String;
       return Restaurant.fromMap(id, map);
     }).toList();
+  }
+
+  /// Récupère un restaurant par son identifiant Firestore.
+  Future<Restaurant?> fetchById(String id) async {
+    try {
+      final doc = await _firestore.collection('restaurants').doc(id).get();
+      if (!doc.exists) return null;
+      return _mapDocToRestaurant(doc);
+    } catch (e) {
+      return null;
+    }
   }
 }

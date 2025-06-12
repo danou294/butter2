@@ -125,7 +125,7 @@ class _HomePageState extends State<HomePage> {
                                 onTap: () => Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (_) => RestaurantDetailPage(restaurant: resto),
+                                    builder: (_) => RestaurantDetailPage(restaurantId: resto.id),
                                   ),
                                 ),
                               ),
@@ -150,7 +150,7 @@ class _HomePageState extends State<HomePage> {
                   if (_isLoading)
                     const Padding(
                       padding: EdgeInsets.symmetric(vertical: 16),
-                      child: Center(child: CircularProgressIndicator()),
+                      child: SizedBox.shrink(),
                     ),
                   if (_hasMore && !_isLoading && _restaurants.isNotEmpty)
                     Padding(

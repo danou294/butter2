@@ -38,10 +38,48 @@ class LocalizationFilter extends StatelessWidget {
     required this.onToggle,
   }) : super(key: key);
 
+  void _onDirectionTap(String dir, bool isSelected) {
+    // Utilise directement les labels du groupe
+    final groupLabels = Restaurant.directionGroups[dir] ?? [];
+    // Sélectionne/désélectionne tous les arrondissements et communes du secteur
+    for (final label in groupLabels) {
+      onToggle(label, isSelected);
+    }
+    // Sélectionne/désélectionne la direction elle-même
+    onToggle(dir, isSelected);
+  }
+
+  // Nouvelle logique : la direction est sélectionnée uniquement si tous ses arrondissements sont sélectionnés
+  void _syncDirectionsWithArrondissements() {
+    for (final dir in Restaurant.directionGroups.keys) {
+      final arrs = Restaurant.directionGroups[dir] ?? [];
+      final arrLabels = Restaurant.arrondissementMap.entries
+          .where((e) => arrs.contains(e.value.first) || arrs.any((code) => e.value.contains(code)))
+          .map((e) => e.key)
+          .toList();
+      final allSelected = arrLabels.every((a) => selected.contains(a));
+      final isDirSelected = selected.contains(dir);
+      if (allSelected && !isDirSelected) {
+        onToggle(dir, true);
+      } else if (!allSelected && isDirSelected) {
+        onToggle(dir, false);
+      }
+    }
+  }
+
   Widget _buildTile(_FilterItem item) {
     final isSelected = selected.contains(item.label);
+    final isDirection = Restaurant.directionGroups.keys.contains(item.label);
     return GestureDetector(
-      onTap: () => onToggle(item.label, !isSelected),
+      onTap: () {
+        if (isDirection) {
+          _onDirectionTap(item.label, !isSelected);
+        } else {
+          onToggle(item.label, !isSelected);
+          // Après chaque sélection/désélection d'arrondissement, on synchronise les directions
+          _syncDirectionsWithArrondissements();
+        }
+      },
       child: Container(
         width: item.width,
         height: item.height,
@@ -91,8 +129,9 @@ class LocalizationFilter extends StatelessWidget {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
 
-    // 1) Directions définies dans le modèle Restaurant
-    final directions = Restaurant.directionGroups.keys.map((dir) {
+    // 1) Directions définies dans le modèle Restaurant (on remet Ouest)
+    final directions = Restaurant.directionGroups.keys
+        .map((dir) {
       return _FilterItem(
         label: dir,
         width: screenWidth / 4,
@@ -127,7 +166,7 @@ class LocalizationFilter extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Directions
+          // Directions (sans Ouest)
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
@@ -142,7 +181,45 @@ class LocalizationFilter extends StatelessWidget {
             alignment: WrapAlignment.center,
             spacing: 10,
             runSpacing: 10,
-            children: arrondissements.map(_buildTile).toList(),
+            children: arrondissements.map((item) {
+              final isSelected = selected.contains(item.label);
+              return GestureDetector(
+                onTap: () {
+                  onToggle(item.label, !isSelected);
+                  // Si on désélectionne un arrondissement du groupe Ouest, on désélectionne aussi le filtre Ouest
+                  if (!isSelected) {
+                    final arrsOuest = Restaurant.directionGroups['Ouest'] ?? [];
+                    final arrLabelsOuest = Restaurant.arrondissementMap.entries
+                        .where((e) => arrsOuest.contains(e.value.first) || arrsOuest.any((code) => e.value.contains(code)))
+                        .map((e) => e.key)
+                        .toList();
+                    if (arrLabelsOuest.contains(item.label) && selected.contains('Ouest')) {
+                      onToggle('Ouest', false);
+                    }
+                  }
+                },
+                child: Container(
+                  width: item.width,
+                  height: item.height,
+                  margin: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: isSelected ? _selectedBg : _unselectedBg,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    item.label,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontFamily: _fontFamily,
+                      fontSize: item.fontSize,
+                      color: _labelColor,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
           ),
           const SizedBox(height: 24),
 

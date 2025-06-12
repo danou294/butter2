@@ -79,7 +79,31 @@ class _SearchPageState extends State<SearchPage>
     setState(() {
       if (selected) _selectedFilters.add(key);
       else _selectedFilters.remove(key);
+      // Désélectionne tous les lieux si plus aucun arrondissement/commune n'est sélectionné
+      final hasLocalisation = _selectedFilters.any((f) =>
+        Restaurant.arrondissementMap.keys.contains(f) ||
+        Restaurant.communeMap.keys.contains(f));
+      if (!hasLocalisation) {
+        _selectedFilters.removeWhere(_isLieu);
+      }
+      _syncDirectionsWithArrondissements();
+      // DEBUG
+      print('[DEBUG] _selectedFilters après modif: $_selectedFilters');
     });
+  }
+
+  // Synchronise les directions (Ouest, Centre, Est) avec la sélection des arrondissements
+  void _syncDirectionsWithArrondissements() {
+    for (final dir in Restaurant.directionGroups.keys) {
+      final groupLabels = Restaurant.directionGroups[dir] ?? [];
+      final allSelected = groupLabels.every((label) => _selectedFilters.contains(label));
+      final isDirSelected = _selectedFilters.contains(dir);
+      if (allSelected && !isDirSelected) {
+        _selectedFilters.add(dir);
+      } else if (!allSelected && isDirSelected) {
+        _selectedFilters.remove(dir);
+      }
+    }
   }
 
   Future<void> _executeSearch() async {
@@ -92,6 +116,7 @@ class _SearchPageState extends State<SearchPage>
     final ambiance = <String>[];
     final lieux = <String>[];
 
+    print('[DEBUG] Filtres sélectionnés pour recherche: $_selectedFilters');
     for (var f in _selectedFilters) {
       if (Restaurant.directionGroups.containsKey(f)) {
         zones.add(f);
@@ -116,8 +141,15 @@ class _SearchPageState extends State<SearchPage>
         moments.add(f);
       }
     }
+    print('[DEBUG] zones: $zones');
+    print('[DEBUG] arrondissements: $arrs');
+    print('[DEBUG] communes: $comms');
+    print('[DEBUG] moments: $moments');
+    print('[DEBUG] cuisines: $cuisines');
+    print('[DEBUG] restrictions: $restrictions');
+    print('[DEBUG] ambiance: $ambiance');
+    print('[DEBUG] lieux: $lieux');
 
-    print('[SearchPage] _executeSearch: lieux envoyés au service = $lieux');
     final results = await svc.SearchService().search(
       zones:           zones.isEmpty    ? null : zones,
       arrondissements: arrs.isEmpty     ? null : arrs,
@@ -253,7 +285,7 @@ class _SearchPageState extends State<SearchPage>
                 return GestureDetector(
                   onTap: () => Navigator.of(ctx).push(
                     MaterialPageRoute(
-                      builder: (_) => RestaurantDetailPage(restaurant: resto),
+                      builder: (_) => RestaurantDetailPage(restaurantId: resto.id),
                     ),
                   ),
                   child: RestaurantCard(restaurant: resto),
@@ -288,10 +320,24 @@ class _SearchPageState extends State<SearchPage>
           );
         case 'Lieu':
           final lieuxFiltres = _selectedFilters.where(_isLieu).toSet();
-          print('[SearchPage] LieuFilter: lieuxFiltres=$lieuxFiltres');
-          return LieuFilter(
-            selected: lieuxFiltres,
-            onToggle: _toggleFilter,
+          // On ne permet la sélection de lieux que si au moins un arrondissement ou commune est sélectionné
+          final hasLocalisation = _selectedFilters.any((f) =>
+            Restaurant.arrondissementMap.keys.contains(f) ||
+            Restaurant.communeMap.keys.contains(f));
+          // Si plus aucun arrondissement/commune n'est sélectionné, on désélectionne tous les lieux
+          if (!hasLocalisation && lieuxFiltres.isNotEmpty) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              setState(() {
+                _selectedFilters.removeWhere(_isLieu);
+              });
+            });
+          }
+          return AbsorbPointer(
+            absorbing: !hasLocalisation,
+            child: LieuFilter(
+              selected: lieuxFiltres,
+              onToggle: _toggleFilter,
+            ),
           );
         case 'Ambiance':
           return AmbianceFilter(
@@ -329,10 +375,11 @@ class _SearchPageState extends State<SearchPage>
             child: ListView.separated(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               scrollDirection: Axis.horizontal,
-              itemCount: _selectedFilters.length,
+              itemCount: _selectedFilters.where((f) => !Restaurant.directionGroups.keys.contains(f)).length,
               separatorBuilder: (_, __) => const SizedBox(width: 8),
               itemBuilder: (_, idx) {
-                final label = _selectedFilters.elementAt(idx);
+                final filtered = _selectedFilters.where((f) => !Restaurant.directionGroups.keys.contains(f)).toList();
+                final label = filtered[idx];
                 return Chip(
                   label: Text(label,
                       style: const TextStyle(fontFamily: _fontFamily)),

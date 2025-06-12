@@ -99,7 +99,7 @@ class _SearchResultsPageState extends State<SearchResultsPage> {
                   onTap: () => Navigator.push(
                     ctx,
                     MaterialPageRoute(
-                      builder: (_) => RestaurantDetailPage(restaurant: resto),
+                      builder: (_) => RestaurantDetailPage(restaurantId: resto.id),
                     ),
                   ),
                   child: RestaurantCard(restaurant: resto),

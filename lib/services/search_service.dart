@@ -27,9 +27,6 @@ class SearchService {
     List<String>? restrictions,
     List<String>? ambiance,
   }) async {
-    print('[SearchService] lieux reçu = ' + (lieux?.toString() ?? 'null'));
-    print('[DEBUG] ambiance envoyé au service : ${ambiance?.toString() ?? 'null'}');
-    print('[DEBUG] Filtres transmis au service :');
     print('  zones:           ' + (zones?.toString() ?? 'null'));
     print('  arrondissements: ' + (arrondissements?.toString() ?? 'null'));
     print('  communes:        ' + (communes?.toString() ?? 'null'));
@@ -77,6 +74,9 @@ class SearchService {
           );
           final snapStr = await queryStr.where('restrictions', isEqualTo: r).get();
           for (var doc in snapStr.docs) {
+            
+            
+            
             resultsMap[doc.id] = _mapDocToRestaurant(doc);
           }
         }
@@ -153,13 +153,27 @@ class SearchService {
         ambiance: ambiance,
       );
       if (codes.isNotEmpty) {
-        queryMaj = codes.length == 1
-            ? queryMaj.where('Arrondissement', isEqualTo: codes.first)
-            : queryMaj.where('Arrondissement', whereIn: codes);
-      }
-      final snapMaj = await queryMaj.get();
-      for (var doc in snapMaj.docs) {
-        resultsMap[doc.id] = _mapDocToRestaurant(doc);
+        if (codes.length == 1) {
+          queryMaj = queryMaj.where('arrondissement', isEqualTo: codes.first);
+          final snapMaj = await queryMaj.get();
+          for (var doc in snapMaj.docs) {
+            resultsMap[doc.id] = _mapDocToRestaurant(doc);
+          }
+        } else {
+          for (var code in codes) {
+            var q = queryMaj.where('arrondissement', isEqualTo: code);
+            final snap = await q.get();
+            for (var doc in snap.docs) {
+              final data = doc.data() as Map<String, dynamic>?;
+              resultsMap[doc.id] = _mapDocToRestaurant(doc);
+            }
+          }
+        }
+      } else {
+        final snapMaj = await queryMaj.get();
+        for (var doc in snapMaj.docs) {
+          resultsMap[doc.id] = _mapDocToRestaurant(doc);
+        }
       }
 
       // 2. Requête sur 'arrondissement' (minuscule)
@@ -174,18 +188,45 @@ class SearchService {
         ambiance: ambiance,
       );
       if (codes.isNotEmpty) {
-        queryMin = codes.length == 1
-            ? queryMin.where('arrondissement', isEqualTo: codes.first)
-            : queryMin.where('arrondissement', whereIn: codes);
-      }
-      final snapMin = await queryMin.get();
-      for (var doc in snapMin.docs) {
-        resultsMap[doc.id] = _mapDocToRestaurant(doc);
+        if (codes.length == 1) {
+          queryMin = queryMin.where('arrondissement', isEqualTo: codes.first);
+          final snapMin = await queryMin.get();
+          for (var doc in snapMin.docs) {
+            resultsMap[doc.id] = _mapDocToRestaurant(doc);
+          }
+        } else {
+          for (var code in codes) {
+            var q = queryMin.where('arrondissement', isEqualTo: code);
+            final snap = await q.get();
+            for (var doc in snap.docs) {
+              final data = doc.data() as Map<String, dynamic>?;
+              resultsMap[doc.id] = _mapDocToRestaurant(doc);
+            }
+          }
+        }
+      } else {
+        final snapMin = await queryMin.get();
+        for (var doc in snapMin.docs) {
+          resultsMap[doc.id] = _mapDocToRestaurant(doc);
+        }
       }
     }
 
     // 3) Retourner la liste sans doublons
-    return resultsMap.values.toList();
+    final resultList = resultsMap.values.toList();
+    print('[DEBUG][SearchService] Arrondissements des résultats:');
+    for (var resto in resultList) {
+      print('  - ${resto.name} : arrondissement=${resto.arrondissement}, adresse=${resto.fullAddress}');
+    }
+    // DEBUG : Affiche les restaurants ambigus (arrondissement != code postal dans l'adresse)
+    for (var resto in resultList) {
+      final codePostalInAddress = RegExp(r'75\d{3}').firstMatch(resto.fullAddress)?.group(0);
+      if (codePostalInAddress != null &&
+          codePostalInAddress != '750${resto.arrondissement.toString().padLeft(2, '0')}') {
+        print('[AMBIGU] ${resto.name} : arrondissement=${resto.arrondissement}, adresse=${resto.fullAddress}');
+      }
+    }
+    return resultList;
   }
 
   List<List<int>> _buildGeoGroups(
@@ -225,7 +266,7 @@ class SearchService {
         final codes = <String>{};
         for (var lbl in zoneArrLabels[z] ?? []) {
           final c = arrMap[lbl];
-          if (c != null) codes.add(c);
+          if (c != null) codes.addAll(c);
         }
         for (var lbl in zoneCommunes[z] ?? []) {
           final c = commMap[lbl];
@@ -241,9 +282,9 @@ class SearchService {
       final codes = <String>{};
       for (var lbl in arrondissements) {
         final c = arrMap[lbl];
-        if (c != null) codes.add(c);
-        if (lbl == '16e') codes.add('75116');
+        if (c != null) codes.addAll(c);
       }
+      print('[DEBUG][SearchService] Codes postaux utilisés pour arrondissements: $codes');
       add(codes);
     }
 

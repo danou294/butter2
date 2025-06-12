@@ -132,7 +132,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
                       onTap: () => Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => RestaurantDetailPage(restaurant: resto),
+                          builder: (_) => RestaurantDetailPage(restaurantId: resto.id),
                         ),
                       ),
                       child: RestaurantCard(restaurant: resto),

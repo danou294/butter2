@@ -78,9 +78,11 @@ class _RestaurantCardState extends State<RestaurantCard> {
           imageUrl: logoUrl,
           height: 40,
           fit: BoxFit.contain,
+          fadeInDuration: const Duration(milliseconds: 500),
+          fadeInCurve: Curves.easeIn,
           placeholder: (context, url) => const SizedBox(
             height: 40,
-            child: Center(child: CircularProgressIndicator(strokeWidth: 1.5)),
+            child: SizedBox.shrink(),
           ),
           errorWidget: (context, url, error) => _placeholderLogo(),
         ),
@@ -138,8 +140,11 @@ class _RestaurantCardState extends State<RestaurantCard> {
                       fit: BoxFit.cover,
                       width: double.infinity,
                       height: double.infinity,
-                      placeholder: (context, url) => const Center(
-                        child: CircularProgressIndicator(strokeWidth: 1.5),
+                      fadeInDuration: const Duration(milliseconds: 500),
+                      fadeInCurve: Curves.easeIn,
+                      placeholder: (context, url) => const SizedBox(
+                        height: 40,
+                        child: SizedBox.shrink(),
                       ),
                       errorWidget: (context, url, error) => const Icon(Icons.broken_image),
                     )
@@ -175,9 +180,14 @@ class _RestaurantCardState extends State<RestaurantCard> {
                 children: [
                   _buildTopInfo(),
                   const SizedBox(height: 2),
-                  _buildLogo(),
+                  SizedBox(
+                    height: 40,
+                    child: _buildLogo(),
+                  ),
                   const SizedBox(height: 6),
-                  Expanded(child: _buildPhotoRow()),
+                  Expanded(
+                    child: _buildPhotoRow(),
+                  ),
                 ],
               ),
               Positioned(
