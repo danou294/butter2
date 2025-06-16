@@ -28,7 +28,16 @@ class LieuFilter extends StatelessWidget {
     'Dans un musée':      'Dans un musée',
     'Dans un monument':   'Dans un monument',
     'Dans un hôtel':      'Dans un hôtel',
-    'Other':              'Other',
+    'Dans un jardin':     'Dans un jardin',
+    'Dans un parc':       'Dans un parc',
+    'Dans un centre commercial': 'Dans un centre commercial',
+    'Dans un marché':     'Dans un marché',
+    'Dans un théâtre':    'Dans un théâtre',
+    'Dans un cinéma':     'Dans un cinéma',
+    'Dans un stade':      'Dans un stade',
+    'Dans un casino':     'Dans un casino',
+    'Dans un spa':        'Dans un spa',
+    'Dans un club':       'Dans un club',
   };
 
   // Styles des chips, alignés sur MomentFilter
@@ -44,13 +53,10 @@ class LieuFilter extends StatelessWidget {
 
   Widget _buildChip(String label) {
     final key = labelToKey[label]!;
-    final isSelected = selected.contains(key) || selected.contains(label);
-    print('[LieuFilter] buildChip: label=$label, key=$key, isSelected=$isSelected, selected=$selected');
+    final isSelected = selected.contains(key);
+
     return InkWell(
-      onTap: () {
-        print('[LieuFilter] onTap: key=$key, newState=${!isSelected}');
-        onToggle(key, !isSelected);
-      },
+      onTap: () => onToggle(key, !isSelected),
       borderRadius: BorderRadius.circular(6),
       child: Container(
         height: _chipHeight,
@@ -80,7 +86,6 @@ class LieuFilter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    print('[LieuFilter] build: selected=$selected');
     final labels = labelToKey.keys.toList();
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),

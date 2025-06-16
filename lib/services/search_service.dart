@@ -36,184 +36,79 @@ class SearchService {
     print('  prix:            ' + (prix?.toString() ?? 'null'));
     print('  restrictions:    ' + (restrictions?.toString() ?? 'null'));
     print('  ambiance:        ' + (ambiance?.toString() ?? 'null'));
+
     // 1) Construction des groupes de codes postaux (OR géo)
     final geoGroups = _buildGeoGroups(zones, arrondissements, communes);
 
     // 2) Exécution des requêtes Firestore et enrichissement média
     final Map<String, Restaurant> resultsMap = {};
+    
+    // Requête de base pour la localisation
     for (var codes in geoGroups) {
-      // PATCH restrictions : deux requêtes si restrictions non vide
-      if ((restrictions ?? []).isNotEmpty) {
-        final baseQuery = _firestore.collection('restaurants') as Query<Map<String, dynamic>>;
-        // 1. arrayContainsAny (cas array)
-        final queryArray = _applyFilters(
-          baseQuery,
-          codes: codes,
-          moments: moments,
-          lieux: lieux,
-          specialites: cuisines,
-          prix: prix,
-          restrictions: null,
-          ambiance: ambiance,
-        );
-        final snapArray = await queryArray.where('restrictions', arrayContainsAny: restrictions!).get();
-        for (var doc in snapArray.docs) {
-          resultsMap[doc.id] = _mapDocToRestaurant(doc);
-        }
-        // 2. isEqualTo (cas string)
-        for (var r in restrictions!) {
-          final queryStr = _applyFilters(
-            baseQuery,
-            codes: codes,
-            moments: moments,
-            lieux: lieux,
-            specialites: cuisines,
-            prix: prix,
-            restrictions: null,
-            ambiance: ambiance,
-          );
-          final snapStr = await queryStr.where('restrictions', isEqualTo: r).get();
-          for (var doc in snapStr.docs) {
-            
-            
-            
-            resultsMap[doc.id] = _mapDocToRestaurant(doc);
-          }
-        }
-        continue;
-      }
-
-      // PATCH ambiance : requêtes multiples si ambiance non vide
-      if ((ambiance ?? []).isNotEmpty) {
-        final baseQuery = _firestore.collection('restaurants') as Query<Map<String, dynamic>>;
-        // 1. arrayContainsAny (cas array)
-        final queryArray = _applyFilters(
-          baseQuery,
-          codes: codes,
-          moments: moments,
-          lieux: lieux,
-          specialites: cuisines,
-          prix: prix,
-          restrictions: restrictions,
-          ambiance: null,
-        );
-        final snapArray = await queryArray.where('ambiance', arrayContainsAny: ambiance!).get();
-        for (var doc in snapArray.docs) {
-          resultsMap[doc.id] = _mapDocToRestaurant(doc);
-        }
-        // 2. isEqualTo (cas string)
-        for (var a in ambiance!) {
-          if (a.contains('/')) continue; // Firestore interdit '/' dans les noms de champs
-          final queryStr = _applyFilters(
-            baseQuery,
-            codes: codes,
-            moments: moments,
-            lieux: lieux,
-            specialites: cuisines,
-            prix: prix,
-            restrictions: restrictions,
-            ambiance: null,
-          );
-          final snapStr = await queryStr.where('ambiance.$a', isEqualTo: true).get();
-          for (var doc in snapStr.docs) {
-            resultsMap[doc.id] = _mapDocToRestaurant(doc);
-          }
-        }
-        // 3. map de booléens : une requête par valeur
-        for (var a in ambiance!) {
-          if (a.contains('/')) continue; // Firestore interdit '/' dans les noms de champs
-          final queryBool = _applyFilters(
-            baseQuery,
-            codes: codes,
-            moments: moments,
-            lieux: lieux,
-            specialites: cuisines,
-            prix: prix,
-            restrictions: restrictions,
-            ambiance: null,
-          );
-          final snapBool = await queryBool.where('ambiance.$a', isEqualTo: true).get();
-          for (var doc in snapBool.docs) {
-            resultsMap[doc.id] = _mapDocToRestaurant(doc);
-          }
-        }
-        continue;
-      }
-
-      // --- PATCH ARRONDISSEMENT ---
-      // 1. Requête sur 'Arrondissement' (majuscule)
-      var queryMaj = _applyFilters(
-        _firestore.collection('restaurants') as Query<Map<String, dynamic>>,
-        codes: [], // on ne filtre pas ici, on le fait juste après
-        moments: moments,
-        lieux: lieux,
-        specialites: cuisines,
-        prix: prix,
-        restrictions: restrictions,
-        ambiance: ambiance,
-      );
       if (codes.isNotEmpty) {
-        if (codes.length == 1) {
-          queryMaj = queryMaj.where('arrondissement', isEqualTo: codes.first);
-          final snapMaj = await queryMaj.get();
-          for (var doc in snapMaj.docs) {
+        // Pour chaque code postal, on fait une requête séparée
+        for (var code in codes) {
+          var query = _firestore.collection('restaurants') as Query<Map<String, dynamic>>;
+          query = query.where('arrondissement', isEqualTo: code);
+          final snapshot = await query.get();
+          for (var doc in snapshot.docs) {
             resultsMap[doc.id] = _mapDocToRestaurant(doc);
-          }
-        } else {
-          for (var code in codes) {
-            var q = queryMaj.where('arrondissement', isEqualTo: code);
-            final snap = await q.get();
-            for (var doc in snap.docs) {
-              final data = doc.data() as Map<String, dynamic>?;
-              resultsMap[doc.id] = _mapDocToRestaurant(doc);
-            }
           }
         }
       } else {
-        final snapMaj = await queryMaj.get();
-        for (var doc in snapMaj.docs) {
-          resultsMap[doc.id] = _mapDocToRestaurant(doc);
-        }
-      }
-
-      // 2. Requête sur 'arrondissement' (minuscule)
-      var queryMin = _applyFilters(
-        _firestore.collection('restaurants') as Query<Map<String, dynamic>>,
-        codes: [], // on ne filtre pas ici, on le fait juste après
-        moments: moments,
-        lieux: lieux,
-        specialites: cuisines,
-        prix: prix,
-        restrictions: restrictions,
-        ambiance: ambiance,
-      );
-      if (codes.isNotEmpty) {
-        if (codes.length == 1) {
-          queryMin = queryMin.where('arrondissement', isEqualTo: codes.first);
-          final snapMin = await queryMin.get();
-          for (var doc in snapMin.docs) {
-            resultsMap[doc.id] = _mapDocToRestaurant(doc);
-          }
-        } else {
-          for (var code in codes) {
-            var q = queryMin.where('arrondissement', isEqualTo: code);
-            final snap = await q.get();
-            for (var doc in snap.docs) {
-              final data = doc.data() as Map<String, dynamic>?;
-              resultsMap[doc.id] = _mapDocToRestaurant(doc);
-            }
-          }
-        }
-      } else {
-        final snapMin = await queryMin.get();
-        for (var doc in snapMin.docs) {
+        // Si pas de codes postaux, on récupère tous les restaurants
+        var query = _firestore.collection('restaurants') as Query<Map<String, dynamic>>;
+        final snapshot = await query.get();
+        for (var doc in snapshot.docs) {
           resultsMap[doc.id] = _mapDocToRestaurant(doc);
         }
       }
     }
 
+    // Filtrage en mémoire pour les autres critères
+    final filteredResults = <String, Restaurant>{};
+    for (var entry in resultsMap.entries) {
+      final resto = entry.value;
+      bool matches = true;
+
+      // Moments
+      if ((moments ?? []).isNotEmpty) {
+        matches = matches && moments!.every((m) => resto.moments.contains(m));
+      }
+
+      // Lieux
+      if ((lieux ?? []).isNotEmpty) {
+        matches = matches && lieux!.every((l) => resto.lieux.contains(l));
+      }
+
+      // Cuisines
+      if ((cuisines ?? []).isNotEmpty) {
+        matches = matches && (cuisines!.contains(resto.specialiteTag) || 
+            cuisines.any((c) => resto.cuisines.contains(c)));
+      }
+
+      // Prix
+      if ((prix ?? []).isNotEmpty) {
+        matches = matches && prix!.contains(resto.priceRange);
+      }
+
+      // Restrictions
+      if ((restrictions ?? []).isNotEmpty) {
+        matches = matches && restrictions!.any((r) => resto.restrictions.contains(r));
+      }
+
+      // Ambiance
+      if ((ambiance ?? []).isNotEmpty) {
+        matches = matches && ambiance!.every((a) => resto.ambiance.contains(a));
+      }
+
+      if (matches) {
+        filteredResults[entry.key] = resto;
+      }
+    }
+
     // 3) Retourner la liste sans doublons
-    final resultList = resultsMap.values.toList();
+    final resultList = filteredResults.values.toList();
     print('[DEBUG][SearchService] Arrondissements des résultats:');
     for (var resto in resultList) {
       print('  - ${resto.name} : arrondissement=${resto.arrondissement}, adresse=${resto.fullAddress}');
@@ -303,7 +198,7 @@ class SearchService {
     return groups;
   }
 
-  Query<Map<String, dynamic>> _applyFilters(
+  Future<Query<Map<String, dynamic>>> _applyFilters(
     Query<Map<String, dynamic>> query, {
     required List<int> codes,
     List<String>? moments,
@@ -312,7 +207,7 @@ class SearchService {
     List<String>? prix,
     List<String>? restrictions,
     List<String>? ambiance,
-  }) {
+  }) async {
     // localisation
     if (codes.isNotEmpty) {
       query = codes.length == 1
@@ -334,15 +229,16 @@ class SearchService {
     }
     // spécialité
     if ((specialites ?? []).isNotEmpty) {
-      if (specialites!.length == 1) {
-        query = query.where('specialite_tag', isEqualTo: specialites.first);
-      } else {
-        query = query.where('specialite_tag', whereIn: specialites);
-      }
+      // On ne filtre pas par cuisine ici, on le fera après avoir récupéré les résultats
+      // en vérifiant à la fois specialite_tag et cuisines
     }
     // prix
     if ((prix ?? []).isNotEmpty) {
-      query = query.where('price_range', arrayContainsAny: prix!);
+      if (prix!.length == 1) {
+        query = query.where('price_range', isEqualTo: prix[0]);
+      } else {
+        query = query.where('price_range', whereIn: prix);
+      }
     }
     // restrictions
     if ((restrictions ?? []).isNotEmpty) {

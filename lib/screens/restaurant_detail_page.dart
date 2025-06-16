@@ -6,16 +6,53 @@ import 'package:url_launcher/url_launcher.dart';
 import '../models/restaurant.dart';
 import '../theme/app_theme.dart';
 import '../services/restaurant_service.dart';
+import '../services/favorite_service.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:share/share.dart';
+import 'package:share_plus/share_plus.dart';
 
-class RestaurantDetailPage extends StatelessWidget {
+class RestaurantDetailPage extends StatefulWidget {
   final String restaurantId;
 
   const RestaurantDetailPage({Key? key, required this.restaurantId}) : super(key: key);
 
+  @override
+  State<RestaurantDetailPage> createState() => _RestaurantDetailPageState();
+}
+
+class _RestaurantDetailPageState extends State<RestaurantDetailPage> {
+  final FavoriteService _favoriteService = FavoriteService();
+  bool _isFavorite = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkFavoriteStatus();
+  }
+
+  Future<void> _checkFavoriteStatus() async {
+    final isFavorite = await _favoriteService.isFavorite(widget.restaurantId);
+    if (mounted) {
+      setState(() {
+        _isFavorite = isFavorite;
+      });
+    }
+  }
+
+  Future<void> _toggleFavorite() async {
+    setState(() {
+      _isFavorite = !_isFavorite;
+    });
+    
+    // Opération en arrière-plan
+    if (_isFavorite) {
+      _favoriteService.addFavorite(widget.restaurantId);
+    } else {
+      _favoriteService.removeFavorite(widget.restaurantId);
+    }
+  }
+
   Future<Restaurant?> fetchRestaurant() async {
-    return await RestaurantService().fetchById(restaurantId);
+    return await RestaurantService().fetchById(widget.restaurantId);
   }
 
   Future<void> _launchUrl(String url) async {
@@ -47,7 +84,7 @@ class RestaurantDetailPage extends StatelessWidget {
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
+            body: SizedBox(),
           );
         }
         if (!snapshot.hasData || snapshot.data == null) {
@@ -161,9 +198,16 @@ Télécharge Butter pour avoir accès à toutes les meilleures adresses de Paris
                               },
                             ),
                             IconButton(
-                              icon: const Icon(Icons.bookmark_border,
-                                  color: AppColors.darkGrey),
-                              onPressed: () {},
+                              icon: CircleAvatar(
+                                backgroundColor: Colors.white,
+                                radius: 18,
+                                child: Icon(
+                                  _isFavorite ? Icons.bookmark : Icons.bookmark_border,
+                                  color: Colors.black,
+                                  size: 20,
+                                ),
+                              ),
+                              onPressed: _toggleFavorite,
                             ),
                           ],
                         ),

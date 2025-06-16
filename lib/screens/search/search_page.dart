@@ -79,13 +79,6 @@ class _SearchPageState extends State<SearchPage>
     setState(() {
       if (selected) _selectedFilters.add(key);
       else _selectedFilters.remove(key);
-      // Désélectionne tous les lieux si plus aucun arrondissement/commune n'est sélectionné
-      final hasLocalisation = _selectedFilters.any((f) =>
-        Restaurant.arrondissementMap.keys.contains(f) ||
-        Restaurant.communeMap.keys.contains(f));
-      if (!hasLocalisation) {
-        _selectedFilters.removeWhere(_isLieu);
-      }
       _syncDirectionsWithArrondissements();
       // DEBUG
       print('[DEBUG] _selectedFilters après modif: $_selectedFilters');
@@ -115,6 +108,7 @@ class _SearchPageState extends State<SearchPage>
     final restrictions = <String>[];
     final ambiance = <String>[];
     final lieux = <String>[];
+    final prix = <String>[];
 
     print('[DEBUG] Filtres sélectionnés pour recherche: $_selectedFilters');
     for (var f in _selectedFilters) {
@@ -124,7 +118,7 @@ class _SearchPageState extends State<SearchPage>
         arrs.add(f);
       } else if (Restaurant.communeMap.containsKey(f)) {
         comms.add(f);
-      } else if (_allCuisines.contains(f)) {
+      } else if (_isCuisine(f)) {
         cuisines.add(f);
       } else if (_isRestriction(f)) {
         restrictions.add(f);
@@ -137,6 +131,8 @@ class _SearchPageState extends State<SearchPage>
         } else {
           lieux.add(f);
         }
+      } else if (_isPrix(f)) {
+        prix.add(f);
       } else {
         moments.add(f);
       }
@@ -149,6 +145,7 @@ class _SearchPageState extends State<SearchPage>
     print('[DEBUG] restrictions: $restrictions');
     print('[DEBUG] ambiance: $ambiance');
     print('[DEBUG] lieux: $lieux');
+    print('[DEBUG] prix: $prix');
 
     final results = await svc.SearchService().search(
       zones:           zones.isEmpty    ? null : zones,
@@ -159,6 +156,7 @@ class _SearchPageState extends State<SearchPage>
       restrictions:    restrictions.isEmpty ? null : restrictions,
       ambiance:        ambiance.isEmpty ? null : ambiance,
       lieux:           lieux.isEmpty    ? null : lieux,
+      prix:            prix.isEmpty     ? null : prix,
     );
 
     setState(() {
@@ -320,24 +318,9 @@ class _SearchPageState extends State<SearchPage>
           );
         case 'Lieu':
           final lieuxFiltres = _selectedFilters.where(_isLieu).toSet();
-          // On ne permet la sélection de lieux que si au moins un arrondissement ou commune est sélectionné
-          final hasLocalisation = _selectedFilters.any((f) =>
-            Restaurant.arrondissementMap.keys.contains(f) ||
-            Restaurant.communeMap.keys.contains(f));
-          // Si plus aucun arrondissement/commune n'est sélectionné, on désélectionne tous les lieux
-          if (!hasLocalisation && lieuxFiltres.isNotEmpty) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              setState(() {
-                _selectedFilters.removeWhere(_isLieu);
-              });
-            });
-          }
-          return AbsorbPointer(
-            absorbing: !hasLocalisation,
-            child: LieuFilter(
-              selected: lieuxFiltres,
-              onToggle: _toggleFilter,
-            ),
+          return LieuFilter(
+            selected: lieuxFiltres,
+            onToggle: _toggleFilter,
           );
         case 'Ambiance':
           return AmbianceFilter(
@@ -473,5 +456,13 @@ class _SearchPageState extends State<SearchPage>
 
   bool _isLieu(String f) {
     return LieuFilter.labelToKey.keys.contains(f) || LieuFilter.labelToKey.values.contains(f);
+  }
+
+  bool _isPrix(String f) {
+    return PrixFilter.labelToKey.keys.contains(f) || PrixFilter.labelToKey.values.contains(f);
+  }
+
+  bool _isCuisine(String f) {
+    return CuisineFilter.labelToKey.keys.contains(f);
   }
 }
