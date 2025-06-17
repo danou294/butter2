@@ -1,4 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
+// Map publique pour la correspondance ambiance clé <-> valeur
+const Map<String, String> ambianceKeyToValue = {
+  'Intimiste': 'Intimiste',
+  'Classique': 'Classique',
+  'Festif': 'Festif',
+};
 
 /// Composant de filtre "Ambiance" pour les restaurants.
 /// Affiche une série de chips représentant l'ambiance souhaitée.
@@ -6,16 +14,89 @@ import 'package:flutter/material.dart';
 ///
 /// - [selected] : ensemble des clés Firestore actuellement sélectionnées.
 /// - [onToggle] : callback appelé lors de la sélection ou désélection d'une clé.
-class AmbianceFilter extends StatelessWidget {
-  /// Ensemble des clés Firestore sélectionnées (ex. 'ambiance_classique').
+class AmbianceFilterPage extends StatelessWidget {
   final Set<String> selected;
+  final void Function(String key, bool selected) onToggle;
+  final bool isSubscribed;
+  final bool isAnonymous;
 
-  /// Fonction appelée lors du basculement d'un filtre.
-  /// - [key]     : clé Firestore de l'ambiance.
-  /// - [selected]: nouvel état (true = sélectionné).
+  const AmbianceFilterPage({
+    Key? key,
+    required this.selected,
+    required this.onToggle,
+    required this.isSubscribed,
+    required this.isAnonymous,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    if (!isSubscribed || isAnonymous) {
+      return _PremiumBlockWidget(
+        onUpgrade: () {
+          Navigator.pushNamed(context, '/paiement');
+        },
+        isAnonymous: isAnonymous,
+      );
+    }
+    return _AmbianceFilter(
+      selected: selected,
+      onToggle: onToggle,
+    );
+  }
+}
+
+class _PremiumBlockWidget extends StatelessWidget {
+  final VoidCallback onUpgrade;
+  final bool isAnonymous;
+
+  const _PremiumBlockWidget({required this.onUpgrade, required this.isAnonymous});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.lock, size: 48, color: Colors.black54),
+          const SizedBox(height: 16),
+          Text(
+            isAnonymous
+                ? "Connecte-toi ou crée un compte pour accéder à cette fonctionnalité."
+                : "Cette fonctionnalité est réservée aux membres Butter Premium.",
+            textAlign: TextAlign.center,
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            isAnonymous
+                ? "Identifie-toi pour profiter de toutes les fonctionnalités."
+                : "Rejoins-nous pour y avoir accès !",
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.black54),
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: onUpgrade,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.black,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: Text(isAnonymous ? "Se connecter" : "Upgrade"),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AmbianceFilter extends StatelessWidget {
+  final Set<String> selected;
   final void Function(String key, bool selected) onToggle;
 
-  const AmbianceFilter({
+  const _AmbianceFilter({
     Key? key,
     required this.selected,
     required this.onToggle,
@@ -23,16 +104,9 @@ class AmbianceFilter extends StatelessWidget {
 
   // Mapping affichage → clé Firestore et valeur technique
   static const Map<String, String> _labelToKey = {
-    'Classique':       'ambiance_classique',
-    'Intimiste/tamisé':'ambiance_intimiste',
-    'Festif':          'ambiance_festif',
-    'Date':            'ambiance_date',
-  };
-  static const Map<String, String> keyToValue = {
-    'ambiance_classique': 'Classique',
-    'ambiance_intimiste': 'Intimiste',
-    'ambiance_festif':    'Festif',
-    'ambiance_date':      'Date',
+    'Intimiste': 'Intimiste',
+    'Classique': 'Classique',
+    'Festif': 'Festif',
   };
 
   // Styles des chips (identiques à MomentFilter/CuisineFilter)
@@ -48,7 +122,7 @@ class AmbianceFilter extends StatelessWidget {
 
   Widget _buildChip(String label) {
     final key = _labelToKey[label]!;
-    final value = keyToValue[key]!;
+    final value = ambianceKeyToValue[key]!;
     final isSelected = selected.contains(value);
 
     return InkWell(

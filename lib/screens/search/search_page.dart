@@ -123,7 +123,7 @@ class _SearchPageState extends State<SearchPage>
       } else if (_isRestriction(f)) {
         restrictions.add(f);
       } else if (_isAmbiance(f)) {
-        final value = AmbianceFilter.keyToValue[f] ?? f;
+        final value = ambianceKeyToValue[f] ?? f;
         ambiance.add(value);
       } else if (_isLieu(f)) {
         if (LieuFilter.labelToKey.containsKey(f)) {
@@ -323,9 +323,11 @@ class _SearchPageState extends State<SearchPage>
             onToggle: _toggleFilter,
           );
         case 'Ambiance':
-          return AmbianceFilter(
+          return AmbianceFilterPage(
             selected: _selectedFilters,
             onToggle: _toggleFilter,
+            isSubscribed: false,
+            isAnonymous: false,
           );
         case 'Prix':
           return PrixFilter(

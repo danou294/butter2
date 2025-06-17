@@ -33,21 +33,28 @@ class MomentFilter extends StatelessWidget {
   static const double _fontSize      = 14.0;
 
   /// Mapping affichage → clés Firestore.
-  /// "Brunch" coche toutes les clés brunch_*. Pas de chip séparé pour samedi/dimanche.
-  static const Map<String, String> labelToKey = {
+  /// Chaque clé correspond à un moment de la journée.
+  static const Map<String, String> _labelToKey = {
     'Petit-déjeuner': 'Petit-déjeuner',
     'Brunch': 'Brunch',
     'Déjeuner': 'Déjeuner',
+    'Dîner': 'Dîner',
     'Goûter': 'Goûter',
     'Drinks': 'Drinks',
-    'Dîner': 'Dîner',
-    'Apéro': 'Apéro',
-    'Brunch le samedi': 'Brunch le samedi',
-    'Brunch le dimanche': 'Brunch le dimanche',
   };
 
+  /// Liste des libellés affichés dans l'ordre souhaité
+  static const List<String> _labels = [
+    'Petit-déjeuner',
+    'Brunch',
+    'Déjeuner',
+    'Goûter',
+    'Drinks',
+    'Dîner',
+  ];
+
   Widget _buildChip(String label) {
-    final key = labelToKey[label]!;
+    final key = _labelToKey[label]!;
     final isSelected = selected.contains(key);
 
     return InkWell(
@@ -81,26 +88,13 @@ class MomentFilter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Liste des libellés affichés
-    const labels = [
-      'Petit-déjeuner',
-      'Brunch',
-      'Déjeuner',
-      'Goûter',
-      'Drinks',
-      'Dîner',
-      'Apéro',
-      'Brunch le samedi',
-      'Brunch le dimanche',
-    ];
-
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
       child: Wrap(
         spacing: _spacing,
         runSpacing: _spacing,
         alignment: WrapAlignment.center,
-        children: labels.map(_buildChip).toList(),
+        children: _labels.map(_buildChip).toList(),
       ),
     );
   }

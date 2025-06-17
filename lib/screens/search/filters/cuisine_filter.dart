@@ -31,17 +31,6 @@ class CuisineFilter extends StatelessWidget {
     'Indien': 'Indien',
     'Américain': 'Américain',
     'Africain': 'Africain',
-    'Chinois': 'Chinois',
-    'Coréen': 'Coréen',
-    'Grec': 'Grec',
-    'Israélien': 'Israélien',
-    'Japonais': 'Japonais',
-    'Libanais': 'Libanais',
-    'Mexicain': 'Mexicain',
-    'Oriental': 'Oriental',
-    'Péruvien': 'Péruvien',
-    'Thaï': 'Thaï',
-    'Vietnamien': 'Vietnamien',
   };
 
   // Styles des chips, alignés sur le MomentFilter
