@@ -33,7 +33,7 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _initUser();
-    _fetchRestaurants();
+    _clearCacheAndFetch();
   }
 
   Future<void> _initUser() async {
@@ -47,19 +47,34 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  Future<void> _clearCacheAndFetch() async {
+    await _restaurantService.clearCache();
+    await _fetchRestaurants();
+  }
+
   Future<void> _fetchRestaurants() async {
     if (_isLoading || !_hasMore) return;
+    
     setState(() => _isLoading = true);
-    final page = await _restaurantService.fetchPage(
-      lastDocument: _lastDocument,
-      pageSize: _pageSize,
-    );
-    setState(() {
-      _restaurants.addAll(page.restaurants);
-      _lastDocument = page.lastDocument;
-      _isLoading = false;
-      _hasMore = page.restaurants.length == _pageSize;
-    });
+    
+    try {
+      final page = await _restaurantService.fetchPage(
+        lastDocument: _lastDocument,
+        pageSize: _pageSize,
+      );
+      
+      setState(() {
+        _restaurants.addAll(page.restaurants);
+        _lastDocument = page.lastDocument;
+        _isLoading = false;
+        _hasMore = page.restaurants.length == _pageSize;
+      });
+      
+    } catch (e, stackTrace) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   Future<void> _refresh() async {
@@ -83,7 +98,15 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        title: const Text('Accueil', style: TextStyle(color: Colors.black)),
+        title: const Text(
+          'Accueil', 
+          style: TextStyle(
+            color: Colors.black,
+            fontFamily: 'InriaSans',
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.delete, color: Colors.red),
@@ -109,10 +132,19 @@ class _HomePageState extends State<HomePage> {
             const SliverToBoxAdapter(child: SizedBox(height: 40)),
             _restaurants.isEmpty && !_isLoading
                 ? const SliverToBoxAdapter(
-                    child: Center(child: Text('Aucun restaurant trouvé')),
+                    child: Center(
+                      child: Text(
+                        'Aucun restaurant trouvé',
+                        style: TextStyle(
+                          fontFamily: 'InriaSans',
+                          fontSize: 16,
+                          color: Colors.black54,
+                        ),
+                      ),
+                    ),
                   )
                 : SliverPadding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
                     sliver: SliverGrid(
                       delegate: SliverChildBuilderDelegate(
                         (context, index) {
@@ -155,25 +187,42 @@ class _HomePageState extends State<HomePage> {
                   if (_hasMore && !_isLoading && _restaurants.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      child: ElevatedButton(
-                        onPressed: _fetchRestaurants,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.black,
-                          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+                      child: SizedBox(
+                        height: 44,
+                        child: ElevatedButton(
+                          onPressed: _fetchRestaurants,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.black,
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(7),
+                            ),
                           ),
-                        ),
-                        child: const Text(
-                          'Charger plus',
-                          style: TextStyle(color: Colors.white, fontSize: 16, fontFamily: 'InriaSans'),
+                          child: const Text(
+                            'Charger plus',
+                            style: TextStyle(
+                              color: Colors.white, 
+                              fontSize: 15, 
+                              fontFamily: 'InriaSans',
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
                       ),
                     ),
                   if (!_hasMore && _restaurants.isNotEmpty)
                     const Padding(
                       padding: EdgeInsets.symmetric(vertical: 16),
-                      child: Center(child: Text('Tous les restaurants sont affichés.')),
+                      child: Center(
+                        child: Text(
+                          'Tous les restaurants sont affichés.',
+                          style: TextStyle(
+                            fontFamily: 'InriaSans',
+                            fontSize: 14,
+                            color: Colors.black54,
+                          ),
+                        ),
+                      ),
                     ),
                 ],
               ),
@@ -222,24 +271,30 @@ class _HomePageState extends State<HomePage> {
           ),
           SizedBox(
             width: width * 0.4,
-            child: OutlinedButton(
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const SearchPage()),
-              ),
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Colors.white),
-                foregroundColor: Colors.white,
-                textStyle: TextStyle(
-                  fontSize: height * 0.035,
-                  fontFamily: 'InriaSans',
+            child: SizedBox(
+              height: 44,
+              child: OutlinedButton(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const SearchPage()),
                 ),
-                shape:
-                    RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-              child: const FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text('Recherche personnalisée'),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Colors.white),
+                  foregroundColor: Colors.white,
+                  textStyle: const TextStyle(
+                    fontSize: 15,
+                    fontFamily: 'InriaSans',
+                    fontWeight: FontWeight.bold,
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(7),
+                  ),
+                ),
+                child: const FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text('Recherche personnalisée'),
+                ),
               ),
             ),
           ),

@@ -106,14 +106,37 @@ class _SearchResultsPageState extends State<SearchResultsPage> {
                 ),
               ),
               firstPageProgressIndicatorBuilder: (_) =>
-                  const Center(child: CircularProgressIndicator()),
+                  const Center(
+                    child: CircularProgressIndicator(),
+                  ),
               newPageProgressIndicatorBuilder: (_) => const Padding(
                   padding: EdgeInsets.symmetric(vertical: 16),
-                  child: Center(child: CircularProgressIndicator())),
+                  child: Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                ),
               noItemsFoundIndicatorBuilder: (_) =>
-                  const Center(child: Text('Aucun restaurant trouvé')),
+                  const Center(
+                    child: Text(
+                      'Aucun restaurant trouvé',
+                      style: TextStyle(
+                        fontFamily: 'InriaSans',
+                        fontSize: 16,
+                        color: Colors.black54,
+                      ),
+                    ),
+                  ),
               firstPageErrorIndicatorBuilder: (_) =>
-                  const Center(child: Text('Erreur de chargement')),
+                  const Center(
+                    child: Text(
+                      'Erreur de chargement',
+                      style: TextStyle(
+                        fontFamily: 'InriaSans',
+                        fontSize: 16,
+                        color: Colors.black54,
+                      ),
+                    ),
+                  ),
             ),
           ),
         ],
@@ -159,24 +182,30 @@ class _SearchResultsPageState extends State<SearchResultsPage> {
           ),
           SizedBox(
             width: width * 0.4,
-            child: OutlinedButton(
-              onPressed: () => Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (_) => const SearchPage()),
-              ),
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Colors.white),
-                foregroundColor: Colors.white,
-                textStyle: TextStyle(
-                  fontSize: height * 0.035,
-                  fontFamily: 'InriaSans',
+            child: SizedBox(
+              height: 44,
+              child: OutlinedButton(
+                onPressed: () => Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (_) => const SearchPage()),
                 ),
-                shape:
-                    RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-              child: const FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text('Modifier mes filtres'),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Colors.white),
+                  foregroundColor: Colors.white,
+                  textStyle: const TextStyle(
+                    fontSize: 15,
+                    fontFamily: 'InriaSans',
+                    fontWeight: FontWeight.bold,
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(7),
+                  ),
+                ),
+                child: const FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text('Modifier mes filtres'),
+                ),
               ),
             ),
           ),

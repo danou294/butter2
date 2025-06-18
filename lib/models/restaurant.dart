@@ -13,6 +13,7 @@ class Restaurant {
   // Commentaires et horaires
   final String commentaire;
   final String hours;
+  final Map<String, dynamic> hoursStructured;
 
   // Contact
   final String phone;
@@ -39,6 +40,7 @@ class Restaurant {
 
   // Stations de métro
   final List<String> stationsMetro;
+  final List<Map<String, dynamic>> stationsMetroStructured;
 
   // Informations complémentaires
   final String moreInfo;
@@ -91,6 +93,7 @@ class Restaurant {
     required this.arrondissement,
     required this.commentaire,
     required this.hours,
+    required this.hoursStructured,
     required this.phone,
     required this.website,
     required this.reservationLink,
@@ -107,6 +110,7 @@ class Restaurant {
     required this.hasTerrace,
     required this.terraceLocs,
     required this.stationsMetro,
+    required this.stationsMetroStructured,
     this.moreInfo = '',
     this.logoUrl,
     this.imageUrls = const [],
@@ -160,20 +164,104 @@ class Restaurant {
       return '';
     }
 
+    // Gestion sécurisée de l'arrondissement
+    int getArrondissement() {
+      try {
+        // Essayer d'abord le champ direct
+        if (data['arrondissement'] != null) {
+          if (data['arrondissement'] is int) {
+            return data['arrondissement'] as int;
+          }
+          if (data['arrondissement'] is num) {
+            return (data['arrondissement'] as num).toInt();
+          }
+          if (data['arrondissement'] is String) {
+            // Si c'est une string comme "75010", extraire le numéro
+            final str = data['arrondissement'] as String;
+            if (str.startsWith('750')) {
+              return int.tryParse(str.substring(3)) ?? 0;
+            }
+            return int.tryParse(str) ?? 0;
+          }
+        }
+        
+        // Essayer dans le sous-objet address
+        return getAddressIntField('arrondissement');
+      } catch (e) {
+        return 0;
+      }
+    }
+
+    // Gestion sécurisée de l'adresse complète
+    String _getFullAddress(Map<String, dynamic> data) {
+      try {
+        final address = data['address'];
+        
+        // Nouveau format : address est une String
+        if (address is String) {
+          return address;
+        }
+        
+        // Ancien format : address est un Map avec 'full'
+        if (address is Map && address['full'] is String) {
+          return address['full'] as String;
+        }
+        
+        return '';
+      } catch (e) {
+        return '';
+      }
+    }
+
+    // Parse les stations de métro (format ancien : liste de strings)
+    List<String> _parseStationsMetro(dynamic stationsData) {
+      if (stationsData == null) return [];
+      
+      // Si c'est une liste
+      if (stationsData is List) {
+        // Vérifier si c'est le nouveau format (liste d'objets)
+        if (stationsData.isNotEmpty && stationsData.first is Map) {
+          // Nouveau format : extraire les noms des stations
+          return stationsData
+              .where((station) => station is Map && station['station'] != null)
+              .map((station) => station['station'].toString())
+              .toList();
+        } else {
+          // Ancien format : liste de strings
+          return stationsData.map((e) => e.toString()).toList();
+        }
+      }
+      
+      return [];
+    }
+
+    // Parse les stations de métro structurées (nouveau format : liste d'objets)
+    List<Map<String, dynamic>> _parseStationsMetroStructured(dynamic stationsData) {
+      if (stationsData == null) return [];
+      
+      // Si c'est une liste d'objets (nouveau format)
+      if (stationsData is List && stationsData.isNotEmpty && stationsData.first is Map) {
+        return stationsData.cast<Map<String, dynamic>>().toList();
+      }
+      
+      return [];
+    }
+
     return Restaurant(
       id: id,
       name: data['name'] as String? ?? '',
       rawName: data['raw_name'] as String? ?? '',
-      fullAddress: getAddressField('full'),
-      arrondissement: getAddressIntField('arrondissement'),
-      commentaire: data['commentaire'] as String? ?? '',
+      fullAddress: _getFullAddress(data),
+      arrondissement: getArrondissement(),
+      commentaire: data['more_info'] as String? ?? '',
       hours: data['hours'] as String? ?? '',
-      phone: getContactField('phone'),
-      website: getContactField('website'),
-      reservationLink: getContactField('reservation_link'),
-      instagram: getContactField('instagram'),
-      googleLink: getMapsField('google_link'),
-      menuLink: getMapsField('menu_link'),
+      hoursStructured: data['hours_structured'] as Map<String, dynamic>? ?? {},
+      phone: data['phone'] as String? ?? '',
+      website: data['website'] as String? ?? '',
+      reservationLink: data['reservation_link'] as String? ?? '',
+      instagram: data['instagram_link'] as String? ?? '',
+      googleLink: data['google_link'] as String? ?? '',
+      menuLink: data['lien_menu'] as String? ?? '',
       types: toList(data['types']),
       moments: toList(data['moments']),
       lieux: toList(data['lieux']),
@@ -183,7 +271,8 @@ class Restaurant {
       restrictions: toList(data['restrictions']),
       hasTerrace: data['has_terrace'] as bool? ?? false,
       terraceLocs: toList(data['terrace_locs']),
-      stationsMetro: toList(data['stations_metro']),
+      stationsMetro: _parseStationsMetro(data['stations_metro']),
+      stationsMetroStructured: _parseStationsMetroStructured(data['stations_metro']),
       moreInfo: data['more_info'] as String? ?? '',
       logoUrl: data['logoUrl'] as String?,
       imageUrls: toList(data['imageUrls']),
@@ -206,6 +295,7 @@ class Restaurant {
       },
       'commentaire': commentaire,
       'hours': hours,
+      'hours_structured': hoursStructured,
       'contact': {
         'phone': phone,
         'website': website,
@@ -226,11 +316,28 @@ class Restaurant {
       'has_terrace': hasTerrace,
       'terrace_locs': boolMap(terraceLocs),
       'stations_metro': boolMap(stationsMetro),
+      'stations_metro_structured': stationsMetroStructured,
       'more_info': moreInfo,
       'logoUrl': logoUrl,
       'imageUrls': imageUrls,
       'specialite_tag': specialiteTag,
       'tag': tag,
     };
+  }
+
+  // Getters utilitaires pour les horaires structurés
+  String? getLunchHours(String day) => hoursStructured[day]?['service_1'];
+  String? getDinnerHours(String day) => hoursStructured[day]?['service_2'];
+  bool isClosed(String day) => hoursStructured[day]?['closed'] == true;
+
+  // Getter pour les noms des stations de métro
+  List<String> get stationNames {
+    if (stationsMetroStructured.isNotEmpty) {
+      return stationsMetroStructured
+          .map((station) => station['station'] as String? ?? '')
+          .where((name) => name.isNotEmpty)
+          .toList();
+    }
+    return stationsMetro;
   }
 }

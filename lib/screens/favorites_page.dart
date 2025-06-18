@@ -95,14 +95,21 @@ class _FavoritesPageState extends State<FavoritesPage> {
           const SliverToBoxAdapter(child: SizedBox(height: 40)),
           if (_loading)
             const SliverFillRemaining(
-              child: Center(child: CircularProgressIndicator()),
+              child: Center(
+                child: CircularProgressIndicator(),
+              ),
             )
           else if (isAnon)
             const SliverFillRemaining(
               child: Center(
                 child: Text(
                   'Connecte-toi pour enregistrer des favoris !',
-                  style: TextStyle(fontSize: 18, color: Colors.black54, fontFamily: 'InriaSans'),
+                  style: TextStyle(
+                    fontSize: 18, 
+                    color: Colors.black54, 
+                    fontFamily: 'InriaSans',
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
             )
@@ -111,7 +118,12 @@ class _FavoritesPageState extends State<FavoritesPage> {
               child: Center(
                 child: Text(
                   'Aucun favori enregistré',
-                  style: TextStyle(fontSize: 18, color: Colors.black54, fontFamily: 'InriaSans'),
+                  style: TextStyle(
+                    fontSize: 18, 
+                    color: Colors.black54, 
+                    fontFamily: 'InriaSans',
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
             )
@@ -206,7 +218,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
         padding: const EdgeInsets.only(right: 10.0),
         child: SizedBox(
           width: width * 0.55,
-          height: height * 0.12,
+          height: 44,
           child: OutlinedButton(
             onPressed: () {
               Navigator.push(
@@ -217,12 +229,14 @@ class _FavoritesPageState extends State<FavoritesPage> {
             style: OutlinedButton.styleFrom(
               side: const BorderSide(color: Colors.white),
               foregroundColor: Colors.white,
-              textStyle: TextStyle(
-                fontSize: height * 0.035,
+              textStyle: const TextStyle(
+                fontSize: 15,
                 fontFamily: 'InriaSans',
+                fontWeight: FontWeight.bold,
               ),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(7),
               ),
             ),
             child: const FittedBox(

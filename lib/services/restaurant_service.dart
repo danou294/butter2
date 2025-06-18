@@ -43,13 +43,26 @@ class RestaurantService {
   }) async {
     final prefs = await SharedPreferences.getInstance();
     final existing = _loadFromCache(prefs);
+    
+    // Vider le cache si il contient des données dans l'ancien format
+    if (existing.isNotEmpty) {
+      try {
+        // Tester si le premier restaurant a l'ancien format
+        final firstRestaurant = existing.first;
+        if (firstRestaurant.fullAddress.isEmpty && firstRestaurant.arrondissement == 0) {
+          await clearCache();
+        }
+      } catch (e) {
+        await clearCache();
+      }
+    }
+    
     try {
       var query = _firestore.collection('restaurants').limit(pageSize);
       if (lastDocument != null) {
         query = query.startAfterDocument(lastDocument);
       }
       final snapshot = await query.get();
-      if (snapshot.docs.isEmpty) print('[DEBUG] Aucun document retourné par la requête Firestore.');
       final newList = snapshot.docs.map(_mapDocToRestaurant).toList();
       // Concatène et déduplique
       final map = <String, Restaurant>{};
@@ -93,29 +106,26 @@ class RestaurantService {
   /// Transforme un DocumentSnapshot en Restaurant normalisé et ajoute URLs.
   Restaurant _mapDocToRestaurant(DocumentSnapshot doc) {
     final raw = Map<String, dynamic>.from(doc.data() as Map);
+    
     final tag = (raw['tag'] ?? '').toString().toUpperCase();
     final logoUrl = tag.isNotEmpty ? _generateLogoUrl(tag) : null;
     final imageUrls = tag.isNotEmpty ? _generateImageUrls(tag) : <String>[];
 
+    // Utiliser directement les données Firestore sans transformation
     final data = <String, dynamic>{
-      'name': raw['name'] ?? raw['Vrai Nom'] ?? raw['rawName'] ?? '',
-      'raw_name': tag,
-      'address': {
-        'full': raw['address'] ?? raw['Adresse'] ?? '',
-        'arrondissement': raw['arrondissement'] ?? raw['Arrondissement'] ?? 0,
-      },
-      'hours': raw['hours'] ?? raw['Horaires'] ?? '',
-      'commentaire': raw['commentaire'] ?? raw['more_info'] ?? '',
-      'contact': {
-        'phone': raw['phone'] ?? raw['Téléphone'] ?? '',
-        'website': raw['website'] ?? raw['Site web'] ?? '',
-        'reservation_link': raw['reservation_link'] ?? raw['Lien de réservation'] ?? '',
-        'instagram': raw['instagram_link'] ?? raw['Lien de votre compte instagram'] ?? '',
-      },
-      'maps': {
-        'google_link': raw['google_link'] ?? raw['Lien Google'] ?? '',
-        'menu_link': raw['lien_menu'] ?? raw['Lien Menu'] ?? '',
-      },
+      'name': raw['name'] ?? '',
+      'raw_name': raw['raw_name'] ?? '',
+      'address': raw['address'] ?? '',
+      'arrondissement': raw['arrondissement'] ?? 0,
+      'hours': raw['hours'] ?? '',
+      'hours_structured': raw['hours_structured'] ?? {},
+      'more_info': raw['more_info'] ?? '',
+      'phone': raw['phone'] ?? '',
+      'website': raw['website'] ?? '',
+      'reservation_link': raw['reservation_link'] ?? '',
+      'instagram_link': raw['instagram_link'] ?? '',
+      'google_link': raw['google_link'] ?? '',
+      'lien_menu': raw['lien_menu'] ?? '',
       'types': raw['types'] ?? [],
       'moments': raw['moments'] ?? [],
       'lieux': raw['lieux'] ?? [],
@@ -125,12 +135,11 @@ class RestaurantService {
       'restrictions': raw['restrictions'] ?? [],
       'has_terrace': raw['has_terrace'] ?? false,
       'terrace_locs': raw['terrace_locs'] ?? [],
-      'stations_metro': raw['stations_metro'] ?? raw['Station(s) de métro à proximité'] ?? [],
-      'more_info': raw['more_info'] ?? '',
+      'stations_metro': raw['stations_metro'] ?? [],
       'logoUrl': logoUrl,
       'imageUrls': imageUrls,
       'specialite_tag': raw['specialite_tag'] ?? '',
-      'tag': raw['tag'] ?? tag,
+      'tag': raw['tag'] ?? '',
     };
 
     return Restaurant.fromMap(doc.id, data);
