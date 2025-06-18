@@ -2,24 +2,44 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
+import 'dart:async';
 
-import 'services/firebase_service.dart'; // <-- Le service Firebase centralisé
+import 'services/firebase_service.dart';
+import 'services/purchase_service.dart';
 import 'auth_gate.dart';
+
+// Définition des IDs des produits
+const Set<String> _kIds = {'premium_monthly', 'premium_yearly'};
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Initialisation de Firebase (Core + configurations custom)
-  await FirebaseService.initialize();
+  
+  // Configuration de la gestion des erreurs Flutter
+  FlutterError.onError = (FlutterErrorDetails details) {
+    print('⚠️ FlutterError: ${details.exception}');
+    print('↪️ Stack: ${details.stack}');
+  };
 
-  // Activation d'App Check en mode debug pour Android et iOS (émulateur ou device dev)
-  await FirebaseAppCheck.instance.activate(
-    androidProvider: AndroidProvider.debug,
-    appleProvider: AppleProvider.debug, // Active aussi pour iOS
-    webProvider: null, // Laisse null sauf si tu fais du web
-  );
-  // Après lancement, copie le token debug affiché dans les logs et ajoute-le dans la console Firebase > App Check > Debug tokens.
+  // Gestion des erreurs asynchrones non interceptées
+  runZonedGuarded(() async {
+    // Initialisation de Firebase (Core + configurations custom)
+    await FirebaseService.initialize();
 
-  runApp(const MyApp());
+    // Activation d'App Check en mode debug pour Android et iOS
+    await FirebaseAppCheck.instance.activate(
+      androidProvider: AndroidProvider.debug,
+      appleProvider: AppleProvider.debug,
+      webProvider: null,
+    );
+
+    // Initialisation des achats in-app
+    await PurchaseService().initialize();
+
+    runApp(const MyApp());
+  }, (error, stackTrace) {
+    print('🔥 Uncaught async error: $error');
+    print('↪️ Stacktrace: $stackTrace');
+  });
 }
 
 class MyApp extends StatelessWidget {

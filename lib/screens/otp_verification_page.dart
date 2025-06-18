@@ -30,6 +30,18 @@ class _OTPVerificationPageState extends State<OTPVerificationPage> {
   final _userService = UserService();
   bool _loading = false;
 
+  @override
+  void initState() {
+    super.initState();
+
+    if (widget.verificationId.isEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showSnack('Erreur technique : vérification non initialisée.');
+        Navigator.of(context).pop();
+      });
+    }
+  }
+
   void _verifyCode() async {
     final code = _codeController.text.trim();
 

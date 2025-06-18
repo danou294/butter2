@@ -36,18 +36,32 @@ class _RegistrationPageState extends State<RegistrationPage> {
       !_loading;
 
   void _onSuivantPressed() async {
+    print('🚀 [RegistrationPage] Début du processus d\'inscription');
+    print('↪️ Numéro de téléphone: ${formattedPhone}');
+    print('↪️ Prénom: ${_prenomController.text.trim()}');
+    print('↪️ Date de naissance: ${_dateController.text.trim()}');
+
     final prenom = _prenomController.text.trim();
     final dateNaissance = _dateController.text.trim();
     final phone = formattedPhone;
 
-    if (!isFormValid) return;
+    if (!isFormValid) {
+      print('❌ [RegistrationPage] Formulaire invalide');
+      print('  - Prénom vide: ${prenom.isEmpty}');
+      print('  - Date vide: ${dateNaissance.isEmpty}');
+      print('  - Téléphone invalide: ${!_isValidPhone(phone)}');
+      return;
+    }
 
     setState(() => _loading = true);
+    print('⏳ [RegistrationPage] Envoi du code de vérification...');
 
     try {
+      print('🚀 [RegistrationPage] Appel à verifyPhoneNumber');
       await _authService.verifyPhoneNumber(
         phoneNumber: phone,
         onCodeSent: (verificationId) {
+          print('✅ [RegistrationPage] Code envoyé avec succès');
           setState(() => _loading = false);
           Navigator.push(
             context,
@@ -61,13 +75,25 @@ class _RegistrationPageState extends State<RegistrationPage> {
             ),
           );
         },
-        onVerificationCompleted: (_) {},
-        onVerificationFailed: (_) {
+        onVerificationCompleted: (_) {
+          print('✅ [RegistrationPage] Vérification automatique réussie');
+        },
+        onVerificationFailed: (e) {
+          print('❌ [RegistrationPage] Échec de la vérification: ${e.message}');
           setState(() => _loading = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Erreur : ${e.message}')),
+          );
         },
       );
-    } catch (e) {
+    } catch (e, stack) {
+      print('🔥 [RegistrationPage] Exception détectée dans verifyPhoneNumber');
+      print('↪️ Exception : $e');
+      print('↪️ Stacktrace : $stack');
       setState(() => _loading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Une erreur est survenue: $e')),
+      );
     }
   }
 
@@ -244,7 +270,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
                     const Align(
                       alignment: Alignment.centerLeft,
                       child: Text(
-                        'Un code de vérification va t’être envoyé par SMS.',
+                        'Un code de verification va t\'etre envoye par SMS.',
                         style: TextStyle(
                           fontSize: 12,
                           fontFamily: 'InriaSans',

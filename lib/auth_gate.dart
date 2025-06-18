@@ -9,8 +9,8 @@ class AuthGate extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder(
-      future: _ensureAuth(),
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
@@ -19,32 +19,14 @@ class AuthGate extends StatelessWidget {
             ),
           );
         }
-        return StreamBuilder<User?>(
-          stream: FirebaseAuth.instance.authStateChanges(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Scaffold(
-                body: Center(
-                  child: CircularProgressIndicator(),
-                ),
-              );
-            }
-            if (snapshot.hasData) {
-              // ✅ Utilisateur connecté (anonyme ou authentifié)
-              return const MainNavigation();
-            } else {
-              // ❌ Aucun utilisateur → page d'accueil
-              return const WelcomeLanding();
-            }
-          },
-        );
+        if (snapshot.hasData) {
+          // ✅ Utilisateur connecté (authentifié)
+          return const MainNavigation();
+        } else {
+          // ❌ Aucun utilisateur → page d'accueil avec options de connexion
+          return const WelcomeLanding();
+        }
       },
     );
-  }
-
-  Future<void> _ensureAuth() async {
-    if (FirebaseAuth.instance.currentUser == null) {
-      await FirebaseAuth.instance.signInAnonymously();
-    }
   }
 }

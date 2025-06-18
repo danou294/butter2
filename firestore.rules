@@ -9,16 +9,38 @@ service cloud.firestore {
                    && request.auth.token.email == "admin@tonsite.com";
     }
 
-    // Utilisateurs : chaque utilisateur peut lire/écrire SON document
+    // Utilisateurs : règles pour la connexion et la gestion des profils
     match /users/{userId} {
-      allow read, write: if request.auth != null
-                         && request.auth.uid == userId;
+      // Permet la lecture pour la recherche par numéro de téléphone (même pour les utilisateurs anonymes)
+      allow read: if true;
+      
+      // Permet l'écriture uniquement sur son propre document
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null 
+                           && request.auth.uid == userId;
 
-      // Sous-collection favorites : chaque utilisateur peut lire/écrire SES favoris
+      // Sous-collection favorites : chaque utilisateur peut gérer ses favoris
       match /favorites/{favId} {
         allow read, write: if request.auth != null
                            && request.auth.uid == userId;
       }
+    }
+
+    // Collection pour les recommandations
+    match /recommandations/{recoId} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null
+                           && request.auth.uid == resource.data.userId;
+    }
+
+    // Collection pour les feedbacks
+    match /feedbacks/{feedbackId} {
+      allow read: if request.auth != null
+                   && request.auth.token.email == "admin@tonsite.com";
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null
+                           && request.auth.uid == resource.data.userId;
     }
   }
 }

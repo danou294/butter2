@@ -32,6 +32,7 @@ dependencies:
   font_awesome_flutter: ^10.7.0
   share_plus: ^7.2.1
   flutter_svg: ^2.0.9
+  in_app_purchase: ^3.1.5
   
   # Localisation + formatage de date
   intl: ^0.20.2

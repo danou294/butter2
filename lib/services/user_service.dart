@@ -3,15 +3,22 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 class UserService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
   /// Vérifie si un utilisateur existe dans Firestore via son UID
   Future<bool> userExists(String uid) async {
+    if (_auth.currentUser == null) {
+      await _auth.signInAnonymously();
+    }
     final doc = await _firestore.collection('users').doc(uid).get();
     return doc.exists;
   }
 
   /// Récupère un utilisateur Firestore par son numéro de téléphone
   Future<Map<String, dynamic>?> getUserByPhone(String phone) async {
+    if (_auth.currentUser == null) {
+      await _auth.signInAnonymously();
+    }
     final query = await _firestore
         .collection('users')
         .where('phone', isEqualTo: phone)
@@ -32,6 +39,9 @@ class UserService {
     required String prenom,
     required String dateNaissance,
   }) async {
+    if (_auth.currentUser == null) {
+      await _auth.signInAnonymously();
+    }
     await _firestore.collection('users').doc(uid).set({
       'uid': uid,
       'phone': phone,
@@ -43,8 +53,10 @@ class UserService {
 
   /// Récupère le prénom de l'utilisateur actuellement connecté
   Future<String?> fetchCurrentUserPrenom() async {
-    print('Current user: [32m[1m[4m[7m${FirebaseAuth.instance.currentUser}[0m');
-    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (_auth.currentUser == null) {
+      await _auth.signInAnonymously();
+    }
+    final uid = _auth.currentUser?.uid;
     if (uid == null) return null;
 
     final doc = await _firestore.collection('users').doc(uid).get();
@@ -53,7 +65,10 @@ class UserService {
 
   /// Récupère toutes les données de l'utilisateur actuellement connecté
   Future<Map<String, dynamic>?> getUserData() async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (_auth.currentUser == null) {
+      await _auth.signInAnonymously();
+    }
+    final uid = _auth.currentUser?.uid;
     if (uid == null) return null;
 
     final doc = await _firestore.collection('users').doc(uid).get();

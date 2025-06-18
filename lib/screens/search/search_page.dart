@@ -326,8 +326,6 @@ class _SearchPageState extends State<SearchPage>
           return AmbianceFilterPage(
             selected: _selectedFilters,
             onToggle: _toggleFilter,
-            isSubscribed: false,
-            isAnonymous: false,
           );
         case 'Prix':
           return PrixFilter(
