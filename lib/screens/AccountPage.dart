@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
+import '../auth_gate.dart';
 
 class AccountPage extends StatefulWidget {
   const AccountPage({super.key});
@@ -270,6 +271,10 @@ class _ProfileTabState extends State<ProfileTab> {
                 onPressed: () async {
                   await FirebaseAuth.instance.signOut();
                   if (context.mounted) {
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (_) => const AuthGate()),
+                      (route) => false,
+                    );
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Déconnecté !')),
                     );

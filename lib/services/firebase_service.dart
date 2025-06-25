@@ -7,28 +7,45 @@ class FirebaseService {
   static bool _initialized = false;
 
   static Future<void> initialize() async {
-    if (_initialized) return;
+    if (_initialized) {
+      if (kDebugMode) print('🔄 Firebase déjà initialisé, on saute.');
+      return;
+    }
 
     try {
       if (Firebase.apps.isEmpty) {
+        print('🚀 Initialisation de Firebase avec les options par défaut...');
         await Firebase.initializeApp(
           options: DefaultFirebaseOptions.currentPlatform,
         );
+        print('✅ Firebase initialisé.');
+      } else {
+        print('📦 Firebase déjà initialisé (detected ${Firebase.apps.length} apps).');
       }
     } catch (e) {
       if (e.toString().contains('A Firebase App named "[DEFAULT]" already exists')) {
-        if (kDebugMode) {
-          print('⚠️ Firebase déjà initialisé, on ignore cette erreur.');
-        }
+        print('⚠️ Firebase "[DEFAULT]" déjà initialisé → on continue.');
       } else {
-        rethrow; // on relance si c'est une autre erreur
+        print('❌ Erreur pendant Firebase.initializeApp() : $e');
+        rethrow;
       }
     }
 
-    await FirebaseAppCheck.instance.activate(
-      androidProvider: AndroidProvider.debug,
-      appleProvider: AppleProvider.debug,
-    );
+    try {
+      print('🛡️ Activation de Firebase App Check (mode debug)...');
+      await FirebaseAppCheck.instance.activate(
+        androidProvider: AndroidProvider.debug,
+        appleProvider: AppleProvider.debug,
+      );
+      print('✅ App Check activé.');
+    } catch (e) {
+      print('❌ Erreur pendant l\'activation de Firebase App Check : $e');
+    }
+
+    // Log des apps actives
+    for (final app in Firebase.apps) {
+      print('📲 FirebaseApp: ${app.name} | ID: ${app.options.appId}');
+    }
 
     _initialized = true;
   }

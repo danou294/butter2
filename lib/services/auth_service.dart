@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -11,6 +12,19 @@ class AuthService {
     required Function(FirebaseAuthException e) onVerificationFailed,
   }) async {
     print('📞 [verifyPhoneNumber] Début de la vérification du numéro $phoneNumber');
+
+    // 🔒 Défense contre crash iOS : s'assurer que FirebaseAuth est bien initialisé
+    if (_auth.app == null) {
+      print('❌ [verifyPhoneNumber] FirebaseAuth.instance.app est NULL ❗');
+      onVerificationFailed(
+        FirebaseAuthException(
+          code: 'auth-not-initialized',
+          message: 'FirebaseAuth.instance n\'est pas correctement initialisé.',
+        ),
+      );
+      return;
+    }
+
     try {
       await _auth.verifyPhoneNumber(
         phoneNumber: phoneNumber,
@@ -31,73 +45,73 @@ class AuthService {
           onCodeSent(verificationId);
         },
         codeAutoRetrievalTimeout: (String verificationId) {
-          print('⏰ [verifyPhoneNumber] Délai de récupération automatique dépassé');
+          print('⏰ [verifyPhoneNumber] Timeout auto');
           print('↪️ verificationId : $verificationId');
         },
         forceResendingToken: null,
         multiFactorSession: null,
       );
     } catch (e) {
-      print('❌ [verifyPhoneNumber] Erreur inattendue lors de la vérification: $e');
+      print('❌ [verifyPhoneNumber] Erreur inattendue : $e');
       rethrow;
     }
   }
 
   /// Vérifie l'OTP saisi manuellement
   Future<void> signInWithOTP(String verificationId, String smsCode) async {
-    print('🔐 AuthService: Tentative de connexion avec OTP');
+    print('🔐 [AuthService] Tentative de connexion avec OTP');
     try {
       final credential = PhoneAuthProvider.credential(
         verificationId: verificationId,
         smsCode: smsCode,
       );
       await _auth.signInWithCredential(credential);
-      print('✅ AuthService: Connexion réussie avec OTP');
+      print('✅ [AuthService] Connexion réussie avec OTP');
     } catch (e) {
-      print('❌ AuthService: Erreur lors de la connexion avec OTP: $e');
+      print('❌ [AuthService] Erreur OTP : $e');
       rethrow;
     }
   }
 
-  /// Connexion auto avec credential (Android only)
+  /// Connexion automatique avec credential (ex: Android auto verify)
   Future<void> signInWithCredential(PhoneAuthCredential credential) async {
-    print('🔑 AuthService: Tentative de connexion avec credential');
+    print('🔑 [AuthService] Connexion avec credential');
     try {
       await _auth.signInWithCredential(credential);
-      print('✅ AuthService: Connexion réussie avec credential');
+      print('✅ [AuthService] Connexion réussie');
     } catch (e) {
-      print('❌ AuthService: Erreur lors de la connexion avec credential: $e');
+      print('❌ [AuthService] Erreur credential : $e');
       rethrow;
     }
   }
 
   /// Connexion anonyme
   Future<void> signInAnonymously() async {
-    print('👤 AuthService: Tentative de connexion anonyme');
+    print('👤 [AuthService] Connexion anonyme');
     try {
       await _auth.signInAnonymously();
-      print('✅ AuthService: Connexion anonyme réussie');
+      print('✅ [AuthService] Connexion anonyme réussie');
     } catch (e) {
-      print('❌ AuthService: Erreur lors de la connexion anonyme: $e');
+      print('❌ [AuthService] Erreur anonyme : $e');
       rethrow;
     }
   }
 
   /// Déconnexion
   Future<void> signOut() async {
-    print('🚪 AuthService: Tentative de déconnexion');
+    print('🚪 [AuthService] Déconnexion');
     try {
       await _auth.signOut();
-      print('✅ AuthService: Déconnexion réussie');
+      print('✅ [AuthService] Déconnexion réussie');
     } catch (e) {
-      print('❌ AuthService: Erreur lors de la déconnexion: $e');
+      print('❌ [AuthService] Erreur déconnexion : $e');
       rethrow;
     }
   }
 
-  /// Récupérer l'utilisateur actuel
+  /// Utilisateur actuel
   User? get currentUser => _auth.currentUser;
 
-  /// Écouter les changements d'état de connexion
+  /// Écoute les changements d'état
   Stream<User?> authStateChanges() => _auth.authStateChanges();
 }
